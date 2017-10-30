@@ -42,6 +42,8 @@ void setup() {
 }
 
 void loop() {
+
+  // Read pins
   if (digitalRead(buttonPin01) == HIGH) {
     buttonPressed = buttonPin01;
   } else if (digitalRead(buttonPin02) == HIGH) {
@@ -52,69 +54,50 @@ void loop() {
     buttonPressed = 0;
   }
 
-if (buttonPressed == 1) {
-  breath(1);
-} else {
-  breath(0);
-}
-
-if (buttonPressed == 2) {
-  setFire(1);
-} else {
-  setFire(0);
-}
-
-if (buttonPressed == 3) {
-  lightChase(1);
-} else {
-  lightChase(0);
-}
-
-/*
   switch (buttonPressed) {
     case buttonPin01:
+      FastLED.clear();
       breath();
     case buttonPin02:
+      FastLED.clear();
       setFire();
     case buttonPin03:
+      FastLED.clear();
       lightChase();
+    case 0:
+      FastLED.clear();
   }
-  */
 }
 
+
 // Function breathes lights in purple 
-int breath(int state) {
-  while (state == 1) {
-    float breathBrightness = (exp(sin(millis()/2000.0*PI)) - 0.36787944)*108.0;
-    FastLED.setBrightness(breathBrightness);
-    FastLED.show();
-  }
+int breath() {
+  float breathBrightness = (exp(sin(millis()/2000.0*PI)) - 0.36787944)*108.0;
+  FastLED.setBrightness(breathBrightness);
+  FastLED.show();
 }
 
 //Function lights leds to look like a fire 
-int setFire(int state) {
-  while (state == 1) {
-    Fire2012(); // run simulation frame
-    FastLED.show(); // display this frame
-    FastLED.delay(1000 / FRAMES_PER_SECOND);
-  }
+int setFire() {
+  Fire2012(); // run simulation frame
+  FastLED.show(); // display this frame
+  FastLED.delay(1000 / FRAMES_PER_SECOND);
 }
 
 // Function wipes leds in a chase
-int lightChase(int state) {
-  while (state == 1) {
-    for(int i = 0; i < NUM_LEDS; i = i + 1) {
-        leds[i] = CRGB::WhiteSmoke;
-        leds[i].maximizeBrightness();
-        FastLED.show();
-        FastLED.delay(45);
-        leds[i] = CRGB::OldLace;
-        leds[i].fadeLightBy( 128 );
-        leds[i] = CRGB::Black;
-        FastLED.show();
-    }
-  } 
+int lightChase() {
+  for(int i = 0; i < NUM_LEDS; i = i + 1) {
+      leds[i] = CRGB::WhiteSmoke;
+      leds[i].maximizeBrightness();
+      FastLED.show();
+      FastLED.delay(45);
+      leds[i] = CRGB::OldLace;
+      leds[i].fadeLightBy( 128 );
+      leds[i] = CRGB::Black;
+      FastLED.show();
+  }
 }
+
 
 #define COOLING  55
 #define SPARKING 80

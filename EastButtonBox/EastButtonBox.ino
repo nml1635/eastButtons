@@ -1,137 +1,140 @@
 //Three buttons doing some things. Debra Lemak 10/14/17
-/*
- Started with code from: 
-
-  created 2005
-  by DojoDave <http://www.0j0.org>
-  modified 30 Aug 2011
-  by Tom Igoe
-
-  This example code is in the public domain.
-
-  http://www.arduino.cc/en/Tutorial/Button
-*/
 #include <FastLED.h>
-#define NUM_LEDS 200
+#define NUM_LEDS 50
 #define DATA_PIN 0
-#define LED_PIN     0
-#define COLOR_ORDER RGB
-#define CHIPSET     WS2811
-#define BRIGHTNESS  200
+#define BRIGHTNESS  20
 #define FRAMES_PER_SECOND 60
 
 CRGB leds[NUM_LEDS];
 
 // constants won't change. They're used here to set pin numbers and fade:
-const int buttonPin01 = 1;     // the number of the pushbutton pin
-const int buttonPin02 = 2;     // the number of the pushbutton pin
-const int buttonPin03 = 3;     // the number of the pushbutton pin
-bool gReverseDirection = false;
+const int buttonPin01 = 8;     // the number of the pushbutton pin
+const int buttonPin02 = 9;     // the number of the pushbutton pin
+const int buttonPin03 = 10;     // the number of the pushbutton pin
 
 // variables will change:
+bool gReverseDirection = false;
 int buttonPressed = 0;
+int previousButton = 0;
+int ledMode = 0;
+uint8_t gHue = 0; // rotating "base color" used by many of the patterns
 
 void setup() {
+  Serial.begin(9600);
   // initialize the pushbutton pin as an input:
-  pinMode(buttonPin01, INPUT);
-  pinMode(buttonPin02, INPUT);
-  pinMode(buttonPin03, INPUT);
+  pinMode(buttonPin01, INPUT_PULLUP);
+  pinMode(buttonPin02, INPUT_PULLUP);
+  pinMode(buttonPin03, INPUT_PULLUP);
   FastLED.addLeds<WS2811, DATA_PIN, RGB>(leds, NUM_LEDS);
   FastLED.setBrightness( BRIGHTNESS );
   FastLED.clear();
 }
 
+/*
+ * Main loop
+ */
 void loop() {
-
-  // Read pins
-  if (digitalRead(buttonPin01) == HIGH) {
-    buttonPressed = buttonPin01;
-  } else if (digitalRead(buttonPin02) == HIGH) {
-    buttonPressed = buttonPin02;
-  } else if (digitalRead(buttonPin03) == HIGH) {
-    buttonPressed = buttonPin03;
-  } else {
-    buttonPressed = 0;
-  }
-
-  switch (buttonPressed) {
-    case buttonPin01:
-      FastLED.clear();
-      breath();
-    case buttonPin02:
-      FastLED.clear();
-      setFire();
-    case buttonPin03:
-      FastLED.clear();
-      lightChase();
-    case 0:
-      FastLED.clear();
-  }
-}
-
-
-// Function breathes lights in purple 
-int breath() {
-  float breathBrightness = (exp(sin(millis()/2000.0*PI)) - 0.36787944)*108.0;
-  FastLED.setBrightness(breathBrightness);
+  checkInputs();
+  renderEffects();
   FastLED.show();
+  FastLED.delay(1000/FRAMES_PER_SECOND); 
 }
 
-//Function lights leds to look like a fire 
-int setFire() {
-  Fire2012(); // run simulation frame
-  FastLED.show(); // display this frame
-  FastLED.delay(1000 / FRAMES_PER_SECOND);
+/**
+ * Check our inputs and set the button state
+ */
+void checkInputs() {
+  // Read pins
+  if (digitalRead(buttonPin01) == LOW) {
+    buttonPressed = buttonPin01;
+    return buttonPressed;
+  } 
+  
+  if (digitalRead(buttonPin02) == LOW) {
+    buttonPressed = buttonPin02;
+    return buttonPressed;
+  } 
+  
+  if (digitalRead(buttonPin03) == LOW) {
+    buttonPressed = buttonPin03;
+    return buttonPressed;
+  } 
+
+  buttonPressed = 0;
 }
 
-// Function wipes leds in a chase
-int lightChase() {
-  for(int i = 0; i < NUM_LEDS; i = i + 1) {
-      leds[i] = CRGB::WhiteSmoke;
-      leds[i].maximizeBrightness();
-      FastLED.show();
-      FastLED.delay(45);
-      leds[i] = CRGB::OldLace;
-      leds[i].fadeLightBy( 128 );
-      leds[i] = CRGB::Black;
-      FastLED.show();
+/**
+ * Handle the button state to render effects
+ */
+void renderEffects() {
+    switch (buttonPressed) {
+    case buttonPin01:
+      Serial.println("Button 1 pressed.");  
+      rainbowWithGlitter();
+      break;
+    case buttonPin02:
+      Serial.println("Button 2 pressed.");  
+      bpm();
+      break;
+    case buttonPin03:
+      Serial.println("Button 3 pressed."); 
+      juggle();
+      break;
+    case 0:
+      Serial.println("No button pressed.");  
+      break;
+  }
+}
+
+/*
+ * Efect #1
+ */
+void rainbowWithGlitter() 
+{
+  // built-in FastLED rainbow, plus some random sparkly glitter
+  rainbow();
+  addGlitter(80);
+}
+
+void rainbow() 
+{
+  // FastLED's built-in rainbow generator
+  fill_rainbow( leds, NUM_LEDS, gHue, 7);
+}
+
+void addGlitter( fract8 chanceOfGlitter) 
+{
+  if( random8() < chanceOfGlitter) {
+    leds[ random16(NUM_LEDS) ] += CRGB::White;
   }
 }
 
 
-#define COOLING  55
-#define SPARKING 80
+/*
+ * Efect #2
+ */
+void bpm()
+{
+  // colored stripes pulsing at a defined Beats-Per-Minute (BPM)
+  uint8_t BeatsPerMinute = 62;
+  CRGBPalette16 palette = PartyColors_p;
+  uint8_t beat = beatsin8( BeatsPerMinute, 64, 255);
+  for( int i = 0; i < NUM_LEDS; i++) { //9948
+    leds[i] = ColorFromPalette(palette, gHue+(i*2), beat-gHue+(i*10));
+  }
+}
 
-void Fire2012() {
-// Array of temperature readings at each simulation cell
-  static byte heat[NUM_LEDS];
 
-  // Step 1.  Cool down every cell a little
-    for( int i = 0; i < NUM_LEDS; i++) {
-      heat[i] = qsub8( heat[i],  random8(0, ((COOLING * 10) / NUM_LEDS) + 2));
-    }
-  
-    // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-    for( int k= NUM_LEDS - 1; k >= 2; k--) {
-      heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2] ) / 3;
-    }
-    
-    // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
-    if( random8() < SPARKING ) {
-      int y = random8(7);
-      heat[y] = qadd8( heat[y], random8(160,255) );
-    }
-
-    // Step 4.  Map from heat cells to LED colors
-    for( int j = 0; j < NUM_LEDS; j++) {
-      CRGB color = HeatColor( heat[j]);
-      int pixelnumber;
-      if( gReverseDirection ) {
-        pixelnumber = (NUM_LEDS-1) - j;
-      } else {
-        pixelnumber = j;
-      }
-      leds[pixelnumber] = color;
-    }
+/*
+ * Efect #3
+ */
+void juggle() {
+  // eight colored dots, weaving in and out of sync with each other
+  fadeToBlackBy( leds, NUM_LEDS, 20);
+  byte dothue = 0;
+  for( int i = 0; i < 8; i++) {
+    leds[beatsin16(i+7,0,NUM_LEDS)] |= CHSV(dothue, 200, 255);
+    dothue += 32;
+  }
 }
 

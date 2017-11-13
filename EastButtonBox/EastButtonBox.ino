@@ -4,16 +4,11 @@
 #define NUM_CLUSTERS 43
 #define DATA_PIN 0
 #define BRIGHTNESS  240
-#define FRAMES_PER_SECOND 40
-
-DEFINE_GRADIENT_PALETTE( heatmap_gp ) {
-  0,     0,  0,  0,   //black
-128,   255,  0,  0,   //red
-224,   255,255,  0,   //bright yellow
-255,   255,255,255 }; //full white
+#define FRAMES_PER_SECOND 10
 
 CRGB leds[NUM_LEDS];
 
+// Barnacle array
 // 1 == small/large | 2 == medium
 int barnacles[44][2] = {
   {1, 0},   // 1
@@ -62,10 +57,30 @@ int barnacles[44][2] = {
   {1, 392},   // 44
 };
 
-// constants won't change. They're used here to set pin numbers and fade:
-const int buttonPin01 = 8;     // the number of the pushbutton pin
-const int buttonPin02 = 9;     // the number of the pushbutton pin
-const int buttonPin03 = 10;     // the number of the pushbutton pin
+// Section array
+int sections[7][2] = {
+  {0, 6},   // 1
+  {6, 11},  // 2
+  {10, 16}, // 3
+  {16, 23}, // 4
+  {21, 28}, // 5
+  {27, 34}, // 6
+  {35, 43}  // 7
+};
+
+// Buttons
+const int buttonPin01 = 4;
+const int buttonPin02 = 5;
+const int buttonPin03 = 6;
+const int sensorPin01 = 7;
+
+// Sensors
+const int sensorPin02 = 8;
+const int sensorPin03 = 9;
+const int sensorPin04 = 10;
+const int sensorPin05 = 11;
+const int sensorPin06 = 12;
+const int sensorPin07 = 13;
 
 // variables will change:
 bool gReverseDirection = false;
@@ -135,13 +150,15 @@ void renderEffects() {
     case buttonPin03:
       Serial.println("Button 3 pressed."); 
       // juggle();
-      hotSection();
+      background();
       break;
     case 0:
       Serial.println("No button pressed.");  
-      hotSection();
+      int sec = random8(0, 7);
+      illuminate(sec);
       break;
   }
+  background();
 }
 
 void setCluster(int cluster[], CHSV primary, CHSV secondary)
@@ -166,6 +183,29 @@ void setCluster(int cluster[], CHSV primary, CHSV secondary)
 }
 
 /*
+void fadeCluster(int cluster[], CRGB primary, CRGB secondary)
+{
+  if (cluster[0] == 1) {
+    fadeUsingColor(cluster[1], NUM_LEDS, primary);
+    fadeUsingColor((cluster[1] + 1), NUM_LEDS, secondary);
+    fadeUsingColor((cluster[1] + 2), NUM_LEDS, secondary);
+    fadeUsingColor((cluster[1] + 3), NUM_LEDS, secondary);
+    fadeUsingColor((cluster[1] + 4), NUM_LEDS, secondary);
+    fadeUsingColor((cluster[1] + 5), NUM_LEDS, secondary);
+    fadeUsingColor((cluster[1] + 6), NUM_LEDS, secondary);
+  } else {
+    fadeUsingColor(cluster[1], NUM_LEDS, primary);
+    fadeUsingColor((cluster[1] + 2), NUM_LEDS, secondary);
+    fadeUsingColor((cluster[1] + 4), NUM_LEDS, secondary);
+    fadeUsingColor((cluster[1] + 6), NUM_LEDS, secondary);
+    fadeUsingColor((cluster[1] + 8), NUM_LEDS, secondary);
+    fadeUsingColor((cluster[1] + 10), NUM_LEDS, secondary);
+    fadeUsingColor((cluster[1] + 12), NUM_LEDS, secondary);
+  }
+}
+*/
+
+/*
  * Mapping
  */
 void test()
@@ -176,12 +216,18 @@ void test()
   }
 }
 
-void hotSection() 
+void background()
 {
-  // random colored speckles that blink in and fade smoothly
-  fadeToBlackBy( leds, NUM_CLUSTERS, 10);
+  fadeToBlackBy(leds, NUM_LEDS, 6);
   int pos = random8(NUM_CLUSTERS);
-  setCluster(barnacles[pos], CHSV(0, 0, 255), CHSV(random8(140, 180), 255, 255));
+  setCluster(barnacles[pos], CHSV(64, 255, 255), CHSV(random8(120, 180), 255, 255));
+}
+
+void illuminate(int section)
+{
+  fadeToBlackBy(leds, NUM_LEDS, 3);
+  int pos = random8(sections[section][0], sections[section][1]);
+  setCluster(barnacles[pos], CHSV(0, 255, 255), CHSV(45, 255, 255));
 }
 
 /*

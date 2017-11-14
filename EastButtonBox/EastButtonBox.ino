@@ -8,9 +8,9 @@
 CRGB leds[NUM_LEDS];
 
 // constants won't change. They're used here to set pin numbers and fade:
-const int buttonPin01 = 8;     // the number of the pushbutton pin
-const int buttonPin02 = 9;     // the number of the pushbutton pin
-const int buttonPin03 = 10;     // the number of the pushbutton pin
+const int buttonPin01 = 1;     // the number of the pushbutton pin
+const int buttonPin02 = 2;     // the number of the pushbutton pin
+const int buttonPin03 = 3;     // the number of the pushbutton pin
 
 // variables will change:
 bool gReverseDirection = false;
@@ -20,7 +20,7 @@ int ledMode = 0;
 uint8_t gHue = 0; // rotating "base color" used by many of the patterns
 
 void setup() {
-  Serial.begin(9600);
+  //Serial.begin(9600);
   // initialize the pushbutton pin as an input:
   pinMode(buttonPin01, INPUT_PULLUP);
   pinMode(buttonPin02, INPUT_PULLUP);
@@ -45,17 +45,17 @@ void loop() {
  */
 void checkInputs() {
   // Read pins
-  if (digitalRead(buttonPin01) == LOW) {
+  if (digitalRead(buttonPin01) == HIGH) {
     buttonPressed = buttonPin01;
     return buttonPressed;
   } 
   
-  if (digitalRead(buttonPin02) == LOW) {
+  if (digitalRead(buttonPin02) == HIGH) {
     buttonPressed = buttonPin02;
     return buttonPressed;
   } 
   
-  if (digitalRead(buttonPin03) == LOW) {
+  if (digitalRead(buttonPin03) == HIGH) {
     buttonPressed = buttonPin03;
     return buttonPressed;
   } 
@@ -69,19 +69,19 @@ void checkInputs() {
 void renderEffects() {
     switch (buttonPressed) {
     case buttonPin01:
-      Serial.println("Button 1 pressed.");  
+    //  Serial.println("Button 1 pressed.");  
       rainbowWithGlitter();
       break;
     case buttonPin02:
-      Serial.println("Button 2 pressed.");  
+      //Serial.println("Button 2 pressed.");  
       bpm();
       break;
     case buttonPin03:
-      Serial.println("Button 3 pressed."); 
+     // Serial.println("Button 3 pressed."); 
       juggle();
       break;
     case 0:
-      Serial.println("No button pressed.");  
+     // Serial.println("No button pressed.");  
       break;
   }
 }

@@ -1,11 +1,18 @@
 //Three buttons doing some things. Debra Lemak 10/14/17
 #include <FastLED.h>
-#define NUM_LEDS 125
-#define DATA_PIN 0
+#define NUM_LEDS1 125
+#define NUM_LEDS2 125
+#define NUM_LEDS3 125
+#define DATA_PIN1 0
+#define DATA_PIN2 4
+#define DATA_PIN3 5
+
 #define BRIGHTNESS  255
 #define FRAMES_PER_SECOND 60
 
-CRGB leds[NUM_LEDS];
+CRGB leds1[NUM_LEDS1];
+CRGB leds2[NUM_LEDS2];
+CRGB leds3[NUM_LEDS3];
 
 // constants won't change. They're used here to set pin numbers and fade:
 const int buttonPin01 = 1;     // the number of the pushbutton pin
@@ -13,11 +20,10 @@ const int buttonPin02 = 2;     // the number of the pushbutton pin
 const int buttonPin03 = 3;     // the number of the pushbutton pin
 
 // variables will change:
-bool gReverseDirection = false;
 int buttonPressed = 0;
-int previousButton = 0;
 int ledMode = 0;
 uint8_t gHue = 0; // rotating "base color" used by many of the patterns
+long boredomTimer = 0; 
 
 
 ///////Pulling in new color sequence from Andrew Tuline, Title: inoise8_pal_demo.ino
@@ -25,17 +31,19 @@ static uint16_t dist;         // A random number for our noise generator.
 uint16_t scale = 30;          // Wouldn't recommend changing this on the fly, or the animation will be really blocky.
 uint8_t maxChanges = 48;      // Value for blending between palettes.
  
-CRGBPalette16 currentPalette(CRGB::Black);
+CRGBPalette16 currentPalette(CRGB::Amethyst);
 CRGBPalette16 targetPalette(OceanColors_p);
 /////////////////////////////////////////////////////////////////
 
 void setup() {
   //Serial.begin(9600);
   // initialize the pushbutton pin as an input:
-  pinMode(buttonPin01, INPUT_PULLUP);
-  pinMode(buttonPin02, INPUT_PULLUP);
-  pinMode(buttonPin03, INPUT_PULLUP);
-  FastLED.addLeds<WS2811, DATA_PIN, RGB>(leds, NUM_LEDS);
+  pinMode(buttonPin01, INPUT);
+  pinMode(buttonPin02, INPUT);
+  pinMode(buttonPin03, INPUT);
+  FastLED.addLeds<WS2811, DATA_PIN1, RGB>(leds1, NUM_LEDS1);
+  FastLED.addLeds<WS2811, DATA_PIN2, RGB>(leds2, NUM_LEDS2);
+  FastLED.addLeds<WS2811, DATA_PIN3, RGB>(leds3, NUM_LEDS3);
   FastLED.setBrightness( BRIGHTNESS );
   FastLED.clear();
 //////////from Tuline
@@ -50,14 +58,14 @@ void setup() {
 void addGlitter( fract8 chanceOfGlitter) 
 {
   if( random8() < chanceOfGlitter) {
-    leds[ random16(NUM_LEDS) ] += CRGB::White;
+    leds1[ random16(NUM_LEDS1) ] += CRGB::White;
   }
 }
 
 void fillnoise8() {
-  for(int i = 0; i < NUM_LEDS; i++) {                                      // Just ONE loop to fill up the LED array as all of the pixels change.
+  for(int i = 0; i < NUM_LEDS1; i++) {                                      // Just ONE loop to fill up the LED array as all of the pixels change.
     uint8_t index = inoise8(i*scale, dist+i*scale) % 255;                  // Get a value from the noise function. I'm using both x and y axis.
-    leds[i] = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
+    leds1[i] = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
   }
   dist += beatsin8(10,1, 4);                                               // Moving along the distance (that random number we started out with). Vary it a bit with a sine wave.
                                                                            // In some sketches, I've used millis() instead of an incremented counter. Works a treat.
@@ -91,8 +99,8 @@ void bpm()
   uint8_t BeatsPerMinute = 62;
   CRGBPalette16 palette = OceanColors_p;
   uint8_t beat = beatsin8( BeatsPerMinute, 64, 255);
-  for( int i = 0; i < NUM_LEDS; i++) { //9948
-    leds[i] = ColorFromPalette(palette, gHue+(i*2), beat-gHue+(i*10));
+  for( int i = 0; i < NUM_LEDS1; i++) { //9948
+    leds1[i] = ColorFromPalette(palette, gHue+(i*2), beat-gHue+(i*10));
   }
 }
 
@@ -102,14 +110,25 @@ void bpm()
  */
 void juggle() {
   // eight colored dots, weaving in and out of sync with each other
-  fadeToBlackBy( leds, NUM_LEDS, 20);
+  fadeToBlackBy( leds1, NUM_LEDS1, 20);
   byte dothue = 0;
   for( int i = 0; i < 8; i++) {
-    leds[beatsin16(i+7,0,NUM_LEDS)] |= CHSV(dothue, 200, 255);
+    leds1[beatsin16(i+7,0,NUM_LEDS1)] |= CHSV(dothue, 200, 255);
     dothue += 32;
   }
 }
 
+/**
+ * Effect #4 for passing time when the Button Beast is not receiving love
+ */
+void boredom() {
+  if (boredomTimer > 5000) {
+     fill_solid(leds1, NUM_LEDS1, CRGB::Purple);
+     float breath = (exp(sin(millis()/2000.0*PI)) - 0.36787944)*108.0;
+     FastLED.setBrightness(breath);
+     FastLED.show(); 
+  }
+}
 
 /**
  * Check our inputs and set the button state
@@ -130,8 +149,10 @@ void checkInputs() {
     buttonPressed = buttonPin03;
     return buttonPressed;
   } 
-
+  else {
   buttonPressed = 0;
+  boredomTimer++;
+  }
 }
 
 /**
@@ -153,6 +174,7 @@ void renderEffects() {
       break;
     case 0:
      // Serial.println("No button pressed.");  
+      boredom(); 
       break;
   }
 }

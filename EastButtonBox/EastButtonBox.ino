@@ -2,13 +2,15 @@
 #include <FastLED.h>
 #define NUM_LEDS1 125
 #define NUM_LEDS2 125
-#define NUM_LEDS3 125
+#define NUM_LEDS3 75
 #define DATA_PIN1 0
 #define DATA_PIN2 4
 #define DATA_PIN3 5
 
 #define BRIGHTNESS  255
 #define FRAMES_PER_SECOND 60
+
+
 
 CRGB leds1[NUM_LEDS1];
 CRGB leds2[NUM_LEDS2];
@@ -18,6 +20,8 @@ CRGB leds3[NUM_LEDS3];
 const int buttonPin01 = 1;     // the number of the pushbutton pin
 const int buttonPin02 = 2;     // the number of the pushbutton pin
 const int buttonPin03 = 3;     // the number of the pushbutton pin
+
+bool gReverseDirection = false;
 
 // variables will change:
 int buttonPressed = 0;
@@ -55,27 +59,27 @@ void setup() {
 /*
  * Efect #1
  */
-void addGlitter( fract8 chanceOfGlitter) 
+void addGlitter(CRGB leds, int NUM_LEDS, fract8 chanceOfGlitter) 
 {
   if( random8() < chanceOfGlitter) {
-    leds1[ random16(NUM_LEDS1) ] += CRGB::White;
+    leds[ random16(NUM_LEDS) ] += CRGB::White;
   }
 }
 
-void fillnoise8() {
-  for(int i = 0; i < NUM_LEDS1; i++) {                                      // Just ONE loop to fill up the LED array as all of the pixels change.
+void fillnoise8(CRGB leds, int NUM_LEDS) {
+  for(int i = 0; i < NUM_LEDS; i++) {                                      // Just ONE loop to fill up the LED array as all of the pixels change.
     uint8_t index = inoise8(i*scale, dist+i*scale) % 255;                  // Get a value from the noise function. I'm using both x and y axis.
-    leds1[i] = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
+    leds[i] = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
   }
   dist += beatsin8(10,1, 4);                                               // Moving along the distance (that random number we started out with). Vary it a bit with a sine wave.
                                                                            // In some sketches, I've used millis() instead of an incremented counter. Works a treat.
 } 
 
-void noisepal() 
+void noisepal(CRGB leds, int NUM_LEDS) 
 {
   EVERY_N_MILLISECONDS(10) {
     nblendPaletteTowardPalette(currentPalette, targetPalette, maxChanges);  // Blend towards the target palette
-    fillnoise8();                                                           // Update the LED array with noise at the new location
+    fillnoise8(leds, NUM_LEDS);                                                           // Update the LED array with noise at the new location
   }
   EVERY_N_SECONDS(5) {             // Change the target palette to a random one every 5 seconds.
     targetPalette = CRGBPalette16(CHSV(random8(), 255, random8(128,255)), CHSV(random8(), 255, random8(128,255)), CHSV(random8(), 192, random8(128,255)), CHSV(random8(), 255, random8(128,255)));
@@ -84,8 +88,12 @@ void noisepal()
 
 void noisepalWithGlitter() 
 {
-  noisepal();
-  addGlitter(80);
+  noisepal(leds1, NUM_LEDS1);
+  noisepal(leds2, NUM_LEDS2);
+  noisepal(leds3, NUM_LEDS3);
+  addGlitter(leds1, NUM_LEDS1,80);
+  addGlitter(leds2, NUM_LEDS2,80);
+  addGlitter(leds3, NUM_LEDS3,80);
 }
 
 
@@ -93,30 +101,60 @@ void noisepalWithGlitter()
 /*
  * Efect #2
  */
-void bpm()
+void bpm(CRGB leds,int NUM_LEDS)
 {
   // colored stripes pulsing at a defined Beats-Per-Minute (BPM)
   uint8_t BeatsPerMinute = 62;
   CRGBPalette16 palette = OceanColors_p;
   uint8_t beat = beatsin8( BeatsPerMinute, 64, 255);
-  for( int i = 0; i < NUM_LEDS1; i++) { //9948
-    leds1[i] = ColorFromPalette(palette, gHue+(i*2), beat-gHue+(i*10));
+  for( int i = 0; i < NUM_LEDS; i++) { //9948
+    leds[i] = ColorFromPalette(palette, gHue+(i*2), beat-gHue+(i*10));
+    
   }
 }
 
 
 /*
  * Efect #3
- */
-void juggle() {
-  // eight colored dots, weaving in and out of sync with each other
-  fadeToBlackBy( leds1, NUM_LEDS1, 20);
-  byte dothue = 0;
-  for( int i = 0; i < 8; i++) {
-    leds1[beatsin16(i+7,0,NUM_LEDS1)] |= CHSV(dothue, 200, 255);
-    dothue += 32;
-  }
+*/
+
+#define COOLING  55
+#define SPARKING 80
+
+void Fire2012(CRGB leds, int NUM_LEDS) {
+// Array of temperature readings at each simulation cell
+    byte heat[NUM_LEDS];
+  
+   // Step 1.  Cool down every cell a little
+     for( int i = 0; i < NUM_LEDS; i++) {
+       heat[i] = qsub8( heat[i],  random8(0, ((COOLING * 10) / NUM_LEDS) + 2));
+     }
+   
+     // Step 2.  Heat from each cell drifts 'up' and diffuses a little
+     for( int k= NUM_LEDS - 1; k >= 2; k--) {
+       heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2] ) / 3;
+     }
+     
+     // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
+     if( random8() < SPARKING ) {
+       int y = random8(7);
+       heat[y] = qadd8( heat[y], random8(160,255) );
+     }
+ 
+     // Step 4.  Map from heat cells to LED colors
+     for( int j = 0; j < NUM_LEDS; j++) {
+       CRGB color = HeatColor( heat[j]);
+       int pixelnumber;
+       if( gReverseDirection ) {
+         pixelnumber = (NUM_LEDS-1) - j;
+      } else {
+         pixelnumber = j;
+       }
+       leds[pixelnumber] = color;
+     }
 }
+
+
 
 /**
  * Effect #4 for passing time when the Button Beast is not receiving love
@@ -166,11 +204,15 @@ void renderEffects() {
       break;
     case buttonPin02:
       //Serial.println("Button 2 pressed.");  
-      bpm();
+      bpm(leds1, NUM_LEDS1);
+      bpm(leds2, NUM_LEDS2);
+      bpm(leds3, NUM_LEDS3);
       break;
     case buttonPin03:
      // Serial.println("Button 3 pressed."); 
-      juggle();
+     Fire2012 (leds1, NUM_LEDS1);
+     Fire2012 (leds2, NUM_LEDS2);
+     Fire2012 (leds3, NUM_LEDS3);
       break;
     case 0:
      // Serial.println("No button pressed.");  

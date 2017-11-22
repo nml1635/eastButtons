@@ -1,23 +1,21 @@
 //Three buttons doing some things. Debra Lemak 10/14/17
 #include <FastLED.h>
-#define NUM_LEDS1 125
-#define NUM_LEDS2 125
-#define NUM_LEDS3 75
-#define DATA_PIN1 0
-#define DATA_PIN2 4
-#define DATA_PIN3 5
+#define NUM_LEDS1 40
+#define NUM_LEDS2 120
+#define NUM_LEDS3 116
+#define DATA_PIN1 9
+#define DATA_PIN2 5
+#define DATA_PIN3 6
 
 #define BRIGHTNESS  255
 #define FRAMES_PER_SECOND 60
-
-
 
 CRGB leds1[NUM_LEDS1];
 CRGB leds2[NUM_LEDS2];
 CRGB leds3[NUM_LEDS3];
 
 // constants won't change. They're used here to set pin numbers and fade:
-const int buttonPin01 = 1;     // the number of the pushbutton pin
+//const int buttonPin01 = 1;     // the number of the pushbutton pin
 const int buttonPin02 = 2;     // the number of the pushbutton pin
 const int buttonPin03 = 3;     // the number of the pushbutton pin
 
@@ -40,9 +38,9 @@ CRGBPalette16 targetPalette(OceanColors_p);
 /////////////////////////////////////////////////////////////////
 
 void setup() {
-  //Serial.begin(9600);
+  Serial.begin(9600);
   // initialize the pushbutton pin as an input:
-  pinMode(buttonPin01, INPUT);
+ // pinMode(buttonPin01, INPUT);
   pinMode(buttonPin02, INPUT);
   pinMode(buttonPin03, INPUT);
   FastLED.addLeds<WS2811, DATA_PIN1, RGB>(leds1, NUM_LEDS1);
@@ -55,10 +53,109 @@ void setup() {
 /////////
 }
 
-
 /*
- * Efect #1
+ * Main loop
  */
+void loop() {
+  checkInputs();
+  renderEffects();
+  FastLED.show();
+  FastLED.delay(1000/FRAMES_PER_SECOND); 
+}
+
+/**
+ * Check our inputs and set the button state
+ */
+void checkInputs() {
+  // Read pins
+/*  if (digitalRead(buttonPin01) == HIGH) {
+    buttonPressed = buttonPin01;
+    return buttonPressed;
+    boredomTimer = 0;
+  } */
+  
+  if (digitalRead(buttonPin02) == HIGH) {
+    buttonPressed = buttonPin02;
+    return buttonPressed;
+    boredomTimer = 0;
+  } 
+  
+  if (digitalRead(buttonPin03) == HIGH) {
+    buttonPressed = buttonPin03;
+    return buttonPressed;
+    boredomTimer = 0;
+  } 
+  else {
+  buttonPressed = 0;
+  boredomTimer++;
+  Serial.println(boredomTimer);
+  }
+}
+
+
+/**
+ * Handle the button state to render effects
+ */
+void renderEffects() {
+    switch (buttonPressed) {
+   /* case buttonPin01:
+     Serial.println("Button 1 pressed.");  
+      backup();
+      break;*/
+    case buttonPin02:
+      Serial.println("Button 2 pressed.");  
+      noisepalWithGlitter();
+      break;
+    case buttonPin03:
+      Serial.println("Button 3 pressed."); 
+      backup();
+      break;
+    case 0:
+      Serial.println("No button pressed.");  
+      break;
+  }
+}
+
+void backup() {
+    for( int i = 0; i < NUM_LEDS2; i++) {
+    float fractionOfTheWayAlongTheStrip = (float)i / (float)(NUM_LEDS2-1);
+    uint8_t amountOfBlending = fractionOfTheWayAlongTheStrip * 255;
+    CRGB pixelColor = blend( CRGB::Blue, CRGB::Red, amountOfBlending);
+    leds2[i] = pixelColor;
+  }
+}
+
+///Setting this aside for troubleshooting
+/*
+void renderEffects() {
+    switch (buttonPressed) {
+    case buttonPin01:
+     Serial.println("Button 1 pressed.");  
+      noisepalWithGlitter();
+      break;
+    case buttonPin02:
+      Serial.println("Button 2 pressed.");  
+      bpm(leds1, NUM_LEDS1);
+      bpm(leds2, NUM_LEDS2);
+      bpm(leds3, NUM_LEDS3);
+      break;
+    case buttonPin03:
+      Serial.println("Button 3 pressed."); 
+     Fire2012 (leds1, NUM_LEDS1);
+     Fire2012 (leds2, NUM_LEDS2);
+     Fire2012 (leds3, NUM_LEDS3);
+      break;
+    case 0:
+      Serial.println("No button pressed.");  
+      boredom(); 
+      break;
+  }
+ 
+}
+ */
+
+ /* Efect #1
+*/ 
 void addGlitter(CRGB leds, int NUM_LEDS, fract8 chanceOfGlitter) 
 {
   if( random8() < chanceOfGlitter) {
@@ -88,10 +185,10 @@ void noisepal(CRGB leds, int NUM_LEDS)
 
 void noisepalWithGlitter() 
 {
-  noisepal(leds1, NUM_LEDS1);
+ // noisepal(leds1, NUM_LEDS1);
   noisepal(leds2, NUM_LEDS2);
   noisepal(leds3, NUM_LEDS3);
-  addGlitter(leds1, NUM_LEDS1,80);
+  //addGlitter(leds1, NUM_LEDS1,80);
   addGlitter(leds2, NUM_LEDS2,80);
   addGlitter(leds3, NUM_LEDS3,80);
 }
@@ -100,7 +197,7 @@ void noisepalWithGlitter()
 
 /*
  * Efect #2
- */
+
 void bpm(CRGB leds,int NUM_LEDS)
 {
   // colored stripes pulsing at a defined Beats-Per-Minute (BPM)
@@ -116,7 +213,7 @@ void bpm(CRGB leds,int NUM_LEDS)
 
 /*
  * Efect #3
-*/
+
 
 #define COOLING  55
 #define SPARKING 80
@@ -158,9 +255,9 @@ void Fire2012(CRGB leds, int NUM_LEDS) {
 
 /**
  * Effect #4 for passing time when the Button Beast is not receiving love
- */
+ 
 void boredom() {
-  if (boredomTimer > 5000) {
+  if (boredomTimer > 50000) {
      fill_solid(leds1, NUM_LEDS1, CRGB::Purple);
      float breath = (exp(sin(millis()/2000.0*PI)) - 0.36787944)*108.0;
      FastLED.setBrightness(breath);
@@ -168,69 +265,10 @@ void boredom() {
   }
 }
 
-/**
- * Check our inputs and set the button state
- */
-void checkInputs() {
-  // Read pins
-  if (digitalRead(buttonPin01) == HIGH) {
-    buttonPressed = buttonPin01;
-    return buttonPressed;
-  } 
-  
-  if (digitalRead(buttonPin02) == HIGH) {
-    buttonPressed = buttonPin02;
-    return buttonPressed;
-  } 
-  
-  if (digitalRead(buttonPin03) == HIGH) {
-    buttonPressed = buttonPin03;
-    return buttonPressed;
-  } 
-  else {
-  buttonPressed = 0;
-  boredomTimer++;
-  }
-}
 
-/**
- * Handle the button state to render effects
- */
-void renderEffects() {
-    switch (buttonPressed) {
-    case buttonPin01:
-    //  Serial.println("Button 1 pressed.");  
-      noisepalWithGlitter();
-      break;
-    case buttonPin02:
-      //Serial.println("Button 2 pressed.");  
-      bpm(leds1, NUM_LEDS1);
-      bpm(leds2, NUM_LEDS2);
-      bpm(leds3, NUM_LEDS3);
-      break;
-    case buttonPin03:
-     // Serial.println("Button 3 pressed."); 
-     Fire2012 (leds1, NUM_LEDS1);
-     Fire2012 (leds2, NUM_LEDS2);
-     Fire2012 (leds3, NUM_LEDS3);
-      break;
-    case 0:
-     // Serial.println("No button pressed.");  
-      boredom(); 
-      break;
-  }
-}
+*/
 
 
-/*
- * Main loop
- */
-void loop() {
-  checkInputs();
-  renderEffects();
-  FastLED.show();
-  FastLED.delay(1000/FRAMES_PER_SECOND); 
-}
 
 
 // For future reference - http://tuline.com/some-fastled-notes/
